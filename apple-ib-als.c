@@ -49,6 +49,7 @@
 #include <linux/iio/trigger.h>
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/version.h>
 
 #include "apple-ibridge.h"
 
@@ -486,8 +487,13 @@ static int appleals_config_iio(struct appleals_device *als_dev)
 		return rc;
 	}
 
+	#if LINUX_VERSION_CODE < KERNEL_VERSION(5,14,0)
+	iio_trig = devm_iio_trigger_alloc(parent, "%s-dev%d", iio_dev->name,
+					  iio_dev->id);
+	#else
 	iio_trig = devm_iio_trigger_alloc(parent, "%s-dev%d", 
 					  iio_dev->name);
+	#endif
 	if (!iio_trig)
 		return -ENOMEM;
 
