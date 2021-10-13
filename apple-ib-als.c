@@ -491,7 +491,7 @@ static int appleals_config_iio(struct appleals_device *als_dev)
 	iio_trig = devm_iio_trigger_alloc(parent, "%s-dev%d", iio_dev->name,
 					  iio_dev->id);
 	#else
-	iio_trig = devm_iio_trigger_alloc(parent, "%s-dev%d", 
+	iio_trig = devm_iio_trigger_alloc(parent, "%s-dev", 
 					  iio_dev->name);
 	#endif
 	if (!iio_trig)
