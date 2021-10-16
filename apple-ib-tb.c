@@ -76,6 +76,8 @@
 
 #define APPLETB_MAX_DIM_TIME	30
 
+#define APPLE_MAGIC_KBD_BL_MAX	16
+
 static int appletb_tb_def_idle_timeout = 5 * 60;
 module_param_named(idle_timeout, appletb_tb_def_idle_timeout, int, 0444);
 MODULE_PARM_DESC(idle_timeout, "Default touch bar idle timeout:\n"
@@ -330,12 +332,16 @@ static int apple_magic_keyboard_backlight_set(struct apple_magic_backlight *back
 	int rc;
 	void *buf;
 
-	char data[] = { 0x03, brightness, 255-brightness, rate, 0x00, 0x00 };
+	char data[] = { 0x03, brightness,
+		APPLE_MAGIC_KBD_BL_MAX - brightness,
+		rate, 0x00, 0x00 };
 	buf = kmemdup(data, sizeof(data), GFP_KERNEL);
 
 	do {
-		// FIXME: use appletb_send_hid_report, don't hard code all of this
-		// Need to get apple_tb_send_hid_report to use wIndex=0x01
+		/*
+		 * FIXME: use appletb_send_hid_report, don't hard code all of this
+		 * Need to get apple_tb_send_hid_report to use wIndex=0x01
+		 */
 		rc = usb_control_msg(&backlight->dev,
 			usb_sndctrlpipe(&backlight->dev, 0),
 			HID_REQ_SET_REPORT, USB_DIR_OUT |
@@ -358,11 +364,15 @@ static int apple_magic_keyboard_backlight_led_set(struct led_classdev *led_cdev,
 	struct apple_magic_backlight *backlight = container_of(led_cdev,
 			struct apple_magic_backlight, cdev);
 
-	// FIXME: why do we need to turn it off before we change brightess?
-	// Maybe dumping macOS's usb traffic will show how it changes brightness.
+	/*
+	 * We can't update the brightness without turning it off and on again.
+	 * We also need to delay a little (13ms isn't enough, but 15ms is).
+	 */
 	ret = apple_magic_keyboard_backlight_set(backlight, 0, 0);
 	if (ret)
 		return ret;
+
+	msleep(15);
 	return apple_magic_keyboard_backlight_set(backlight, brightness, 0);
 }
 
@@ -372,11 +382,10 @@ static int apple_magic_keyboard_backlight_init(struct appletb_device *tb_dev)
 	struct apple_magic_backlight *backlight;
 
 	switch(tb_dev->tpd_handle.dev->id.product) {
-		// FIXME: why doesn't it work if I use hex values??
-		case 832: /* MacBookPro16,1/4 */
-		case 638: /* MacBookPro16,2 */
-		case 639: /* MacBookPro16,3 */
-		case 640: /* MacBookAir9,1 */
+		case 0x0340u: /* MacBookPro16,1/4 */
+		case 0x027eu: /* MacBookPro16,2 */
+		case 0x027fu: /* MacBookPro16,3 */
+		case 0x0280u: /* MacBookAir9,1 */
 			break;
 		default:
 			return 0;
@@ -387,8 +396,8 @@ static int apple_magic_keyboard_backlight_init(struct appletb_device *tb_dev)
 		return -ENOMEM;
 
 	backlight->dev = *interface_to_usbdev(tb_dev->disp_iface.usb_iface);
-	backlight->cdev.name = "apple::magic_kbd_backlight";
-	backlight->cdev.max_brightness = 255; //FIXME: shouldn't be hard coded?
+	backlight->cdev.name = "apple::kbd_backlight";
+	backlight->cdev.max_brightness = APPLE_MAGIC_KBD_BL_MAX;
 	backlight->cdev.brightness_set_blocking = apple_magic_keyboard_backlight_led_set;
 
 	ret = apple_magic_keyboard_backlight_set(backlight, 0, 0);
@@ -1310,7 +1319,7 @@ static int appletb_probe(struct hid_device *hdev,
 		rc = apple_magic_keyboard_backlight_init(tb_dev);
 		if (rc) {
 			dev_err(tb_dev->log_dev,
-				"Failed to create magic backlight led class dev (%d)\n", rc);
+				"Failed to initialise magic keyboard backlight (%d)\n", rc);
 		}
 	}
 
