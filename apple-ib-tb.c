@@ -368,12 +368,7 @@ static int apple_magic_keyboard_backlight_led_set(struct led_classdev *led_cdev,
 	 * We can't update the brightness without turning it off and on again.
 	 * We also need to delay a little (13ms isn't enough, but 15ms is).
 	 */
-	/*ret = apple_magic_keyboard_backlight_set(backlight, 0, 0);
-	*if (ret)
-	*	return ret;
-	*
-	*msleep(15);
-	*/
+
 	return apple_magic_keyboard_backlight_set(backlight, brightness, 1);
 }
 
