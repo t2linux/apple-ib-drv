@@ -76,7 +76,7 @@
 
 #define APPLETB_MAX_DIM_TIME	30
 
-#define APPLE_MAGIC_KBD_BL_MAX	16
+#define APPLE_MAGIC_KBD_BL_MAX	255
 
 static int appletb_tb_def_idle_timeout = 5 * 60;
 module_param_named(idle_timeout, appletb_tb_def_idle_timeout, int, 0444);
