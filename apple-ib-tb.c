@@ -98,8 +98,8 @@ static int appletb_tb_def_fn_mode = APPLETB_FN_MODE_INV;
 module_param_named(fnmode, appletb_tb_def_fn_mode, int, 0444);
 MODULE_PARM_DESC(fnmode, "Default Fn key mode:\n"
 			 "    0 - function-keys only\n"
-			 "    [1] - fn key switches from special to function-keys\n"
-			 "    2 - inverse of 1\n"
+			 "    1 - fn key switches from special to function-keys\n"
+			 "    [2] - inverse of 1\n"
 			 "    3 - special keys only\n"
 			 "    4 - escape key only");
 
