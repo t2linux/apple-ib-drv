@@ -94,7 +94,7 @@ MODULE_PARM_DESC(dim_timeout, "Default touch bar dim timeout:\n"
 			      "    -1 - disable timeout (touch bar never dimmed)\n"
 			      "    [-2] - calculate timeout based on idle-timeout");
 
-static int appletb_tb_def_fn_mode = APPLETB_FN_MODE_NORM;
+static int appletb_tb_def_fn_mode = APPLETB_FN_MODE_INV;
 module_param_named(fnmode, appletb_tb_def_fn_mode, int, 0444);
 MODULE_PARM_DESC(fnmode, "Default Fn key mode:\n"
 			 "    0 - function-keys only\n"
