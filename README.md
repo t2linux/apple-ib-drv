@@ -8,6 +8,7 @@ In no event will I be liable for any loss or damage, including without limitatio
 You are solely responsible for your actions and decisions. Always exercise caution and consult with a qualified professional if you are unsure about any steps or procedures. By using this information, you agree to hold me harmless from any and all claims, liabilities, or damages that may result from your use of the information provided.
 
 This disclaimer applies to the fullest extent permitted by law.
+
 ------------------------
 
 Building and Installing on Arch Linux / CachyOS:
