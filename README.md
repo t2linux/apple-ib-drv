@@ -7,8 +7,8 @@ Building and Installing on Arch Linux / CachyOS:
 sudo pacman -S lld                                      
 sudo pacman -S clang
 
-git clone --branch mbp15 https://github.com/roadrunner2/macbook12-spi-driver.git
-cd apple-ib-drv
+git clone https://github.com/vallamost/apple-ib-drv-arch-linux-support.git
+cd apple-ib-drv-arch-linux-support
 make CC=clang LD=ld.lld
 sudo modprobe industrialio_triggered_buffer
 sudo insmod apple-ibridge.ko
