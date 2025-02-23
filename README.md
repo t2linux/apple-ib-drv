@@ -1,28 +1,18 @@
 Work in progress driver for the touchbar and ambient-light-sensor on 2019 MacBook Pro's.
 
-Building and Installing:
+Building and Installing on Arch Linux / CachyOS:
 ------------------------
 ```
+# setup / install pre-reqs
+sudo pacman -S lld                                      
+sudo pacman -S clang
+
 git clone --branch mbp15 https://github.com/roadrunner2/macbook12-spi-driver.git
-cd macbook12-spi-driver
-make
+cd apple-ib-drv
+make CC=clang LD=ld.lld
 sudo modprobe industrialio_triggered_buffer
 sudo insmod apple-ibridge.ko
-sudo insmod apple-ib-tb.ko
-sudo insmod apple-ib-als.ko
-```
-
-Alternatively, use dkms:
-
-DKMS module:
-------------
-As root, do the following (use `dnf` instead of `apt` if on Fedora or similar):
-```
-apt install dkms
-git clone --branch mbp15 https://github.com/roadrunner2/macbook12-spi-driver.git /usr/src/apple-ibridge-0.1
-dkms install -m apple-ibridge -v 0.1
-modprobe apple-ib-tb
-modprobe apple-ib-als
+sudo insmod apple-touchbar.ko
 ```
 
 Touchbar/ALS/iBridge:
