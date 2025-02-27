@@ -1,28 +1,29 @@
 Work in progress driver for the touchbar and ambient-light-sensor on 2019 MacBook Pro's.
 
-Building and Installing:
+------------------------
+The information provided here is for general informational purposes only. While I strive to ensure the accuracy and reliability of the information, I make no representations or warranties of any kind, express or implied, about the completeness, accuracy, reliability, suitability, or availability of the information, products, services, or related graphics provided. Any reliance you place on such information is strictly at your own risk.
+
+In no event will I be liable for any loss or damage, including without limitation, indirect or consequential loss or damage, or any loss or damage whatsoever arising from the use of, or reliance on, this information. This includes, but is not limited to, technical issues, data loss, system failures, or any other problems that may arise from following the advice or instructions provided.
+
+You are solely responsible for your actions and decisions. Always exercise caution and consult with a qualified professional if you are unsure about any steps or procedures. By using this information, you agree to hold me harmless from any and all claims, liabilities, or damages that may result from your use of the information provided.
+
+This disclaimer applies to the fullest extent permitted by law.
+
+------------------------
+
+Building and Installing on Arch Linux / CachyOS:
 ------------------------
 ```
-git clone --branch mbp15 https://github.com/roadrunner2/macbook12-spi-driver.git
-cd macbook12-spi-driver
-make
+# setup / install pre-reqs
+sudo pacman -S lld                                      
+sudo pacman -S clang
+
+git clone https://github.com/vallamost/apple-ib-drv-arch-linux-support.git
+cd apple-ib-drv-arch-linux-support
+make CC=clang LD=ld.lld
 sudo modprobe industrialio_triggered_buffer
 sudo insmod apple-ibridge.ko
-sudo insmod apple-ib-tb.ko
-sudo insmod apple-ib-als.ko
-```
-
-Alternatively, use dkms:
-
-DKMS module:
-------------
-As root, do the following (use `dnf` instead of `apt` if on Fedora or similar):
-```
-apt install dkms
-git clone --branch mbp15 https://github.com/roadrunner2/macbook12-spi-driver.git /usr/src/apple-ibridge-0.1
-dkms install -m apple-ibridge -v 0.1
-modprobe apple-ib-tb
-modprobe apple-ib-als
+sudo insmod apple-touchbar.ko
 ```
 
 Touchbar/ALS/iBridge:
