@@ -1,3 +1,4 @@
+EDIT: This driver is no longer needed for kernels > 6.15
 Work in progress driver for the touchbar and ambient-light-sensor on 2019 MacBook Pro's.
 
 Building and Installing:
