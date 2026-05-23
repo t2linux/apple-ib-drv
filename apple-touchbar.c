@@ -40,7 +40,6 @@
 #include <linux/usb.h>
 #include <linux/workqueue.h>
 
-#include "hid-ids.h"
 #include "apple-ibridge.h"
 
 #define HID_UP_APPLE		0xff120000
@@ -78,7 +77,25 @@
 
 #define APPLETB_FEATURE_IS_T1	BIT(0)
 
-static int appletb_tb_def_idle_timeout = 5 * 60;
+#if defined(KEY_MISSION_CONTROL)
+#define APPLETB_KEY_MISSION_CONTROL KEY_MISSION_CONTROL
+#elif defined(KEY_SCALE)
+#define APPLETB_KEY_MISSION_CONTROL KEY_SCALE
+#else
+#define APPLETB_KEY_MISSION_CONTROL KEY_F3
+#endif
+
+#if defined(KEY_ALL_APPLICATIONS)
+#define APPLETB_KEY_LAUNCHPAD KEY_ALL_APPLICATIONS
+#elif defined(KEY_DASHBOARD)
+#define APPLETB_KEY_LAUNCHPAD KEY_DASHBOARD
+#elif defined(KEY_SEARCH)
+#define APPLETB_KEY_LAUNCHPAD KEY_SEARCH
+#else
+#define APPLETB_KEY_LAUNCHPAD KEY_F4
+#endif
+
+static int appletb_tb_def_idle_timeout = 90;
 module_param_named(idle_timeout, appletb_tb_def_idle_timeout, int, 0444);
 MODULE_PARM_DESC(idle_timeout, "Default touch bar idle timeout:\n"
 			       "    [>0] - turn touch bar display off after no keyboard, trackpad, or touch bar input has been received for this many seconds;\n"
@@ -185,8 +202,8 @@ struct appletb_key_translation {
 static const struct appletb_key_translation appletb_fn_codes[] = {
 	{ KEY_F1,  KEY_BRIGHTNESSDOWN },
 	{ KEY_F2,  KEY_BRIGHTNESSUP },
-	{ KEY_F3,  KEY_SCALE },		/* not used */
-	{ KEY_F4,  KEY_DASHBOARD },	/* not used */
+	{ KEY_F3,  APPLETB_KEY_MISSION_CONTROL },
+	{ KEY_F4,  APPLETB_KEY_LAUNCHPAD },
 	{ KEY_F5,  KEY_KBDILLUMDOWN },
 	{ KEY_F6,  KEY_KBDILLUMUP },
 	{ KEY_F7,  KEY_PREVIOUSSONG },
@@ -265,7 +282,7 @@ static int appletb_set_tb_mode(struct appletb_device *tb_dev,
 		} while (++tries < 5);
 	} else {
 		rc = hid_hw_raw_request(tb_dev->mode_iface.hdev, report->id,
-					(__u8 *) buf, 2, report->type,
+					(__u8 *)buf, 2, report->type,
 					HID_REQ_SET_REPORT);
 	}
 
@@ -608,6 +625,7 @@ static ssize_t idle_timeout_store(struct device *dev,
 				  const char *buf, size_t size)
 {
 	struct appletb_device *tb_dev = dev_get_drvdata(dev);
+	unsigned long flags;
 	long new;
 	int rc;
 
@@ -615,7 +633,9 @@ static ssize_t idle_timeout_store(struct device *dev,
 	if (rc || new > INT_MAX || new < -2)
 		return -EINVAL;
 
+	spin_lock_irqsave(&tb_dev->tb_lock, flags);
 	appletb_set_idle_timeout(tb_dev, new);
+	spin_unlock_irqrestore(&tb_dev->tb_lock, flags);
 	appletb_update_touchbar(tb_dev, true);
 
 	return size;
@@ -646,6 +666,7 @@ static ssize_t dim_timeout_store(struct device *dev,
 				 const char *buf, size_t size)
 {
 	struct appletb_device *tb_dev = dev_get_drvdata(dev);
+	unsigned long flags;
 	long new;
 	int rc;
 
@@ -653,7 +674,9 @@ static ssize_t dim_timeout_store(struct device *dev,
 	if (rc || new > INT_MAX || new < -2)
 		return -EINVAL;
 
+	spin_lock_irqsave(&tb_dev->tb_lock, flags);
 	appletb_set_dim_timeout(tb_dev, new);
+	spin_unlock_irqrestore(&tb_dev->tb_lock, flags);
 	appletb_update_touchbar(tb_dev, true);
 
 	return size;
@@ -671,6 +694,7 @@ static ssize_t fnmode_store(struct device *dev, struct device_attribute *attr,
 			    const char *buf, size_t size)
 {
 	struct appletb_device *tb_dev = dev_get_drvdata(dev);
+	unsigned long flags;
 	long new;
 	int rc;
 
@@ -678,7 +702,9 @@ static ssize_t fnmode_store(struct device *dev, struct device_attribute *attr,
 	if (rc || new > APPLETB_FN_MODE_MAX || new < 0)
 		return -EINVAL;
 
+	spin_lock_irqsave(&tb_dev->tb_lock, flags);
 	tb_dev->fn_mode = new;
+	spin_unlock_irqrestore(&tb_dev->tb_lock, flags);
 	appletb_update_touchbar(tb_dev, false);
 
 	return size;
@@ -762,8 +788,7 @@ static int appletb_hid_event(struct hid_device *hdev, struct hid_field *field,
 	/* translate special keys */
 	} else if (new_code &&
 		   ((value > 0 &&
-		     appletb_get_cur_tb_mode(tb_dev) == APPLETB_CMD_MODE_SPCL)
-		    ||
+		     appletb_get_cur_tb_mode(tb_dev) == APPLETB_CMD_MODE_SPCL) ||
 		    (value == 0 && tb_dev->last_tb_keys_translated[slot]))) {
 		tb_dev->last_tb_keys_translated[slot] = true;
 		send_trnsl = true;
@@ -1180,9 +1205,9 @@ static int appletb_probe(struct hid_device *hdev,
 	/* Ensure this usb endpoint is for the touchbar backlight, not keyboard
 	 * backlight.
 	 */
-	if ((hdev->product == USB_DEVICE_ID_APPLE_TOUCHBAR_BACKLIGHT) &&
-			!(hdev->collection && hdev->collection[0].usage ==
-				HID_USAGE_APPLE_APP)) {
+	if (hdev->product == USB_DEVICE_ID_APPLE_TOUCHBAR_BACKLIGHT &&
+	    !(hdev->collection &&
+	      hdev->collection[0].usage == HID_USAGE_APPLE_APP)) {
 		return -ENODEV;
 	}
 
@@ -1325,7 +1350,6 @@ static int appletb_suspend(struct hid_device *hdev, pm_message_t message)
 		return 0;
 
 	if (tb_dev->is_t1) {
-
 		/*
 		 * Wait for both interfaces to be suspended and no more async work
 		 * in progress.
@@ -1419,7 +1443,7 @@ static struct appletb_device *appletb_alloc_device(void)
 {
 	struct appletb_device *tb_dev;
 
-	tb_dev = kzalloc(sizeof(*tb_dev), GFP_KERNEL);
+	tb_dev = kcalloc(1, sizeof(*tb_dev), GFP_KERNEL);
 	if (!tb_dev)
 		return NULL;
 

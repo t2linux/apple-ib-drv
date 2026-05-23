@@ -11,6 +11,9 @@ PWD := $(shell pwd)
 all:
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
 
+test:
+	bash tests/smoke-test.sh
+
 clean:
 	$(MAKE) -C $(KDIR) M=$(PWD) clean
 

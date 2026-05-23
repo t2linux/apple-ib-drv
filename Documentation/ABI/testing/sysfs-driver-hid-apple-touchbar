@@ -1,0 +1,44 @@
+What:		/sys/devices/.../fnmode
+Date:		2026-05-23
+KernelVersion:	TBD
+Contact:	linux-input@vger.kernel.org
+Description:
+	Control the touch bar function/special key mode.
+	Accepted values:
+	  0: function keys only
+	  1: default special keys, hold Fn for function keys
+	  2: inverse of mode 1
+	  3: special keys only
+	  4: escape key only
+	Reads back the current mode as an integer and newline.
+
+What:		/sys/devices/.../dim_timeout
+Date:		2026-05-23
+KernelVersion:	TBD
+Contact:	linux-input@vger.kernel.org
+Description:
+	Control the dim timeout in seconds.
+	Accepted values:
+	  >0: dim after timeout when there is no keyboard, touchpad or touch bar input
+	   0: keep display dimmed
+	  -1: disable dim timeout (never dim)
+	  -2: auto-calculate based on idle_timeout
+	Reads back the configured timeout, with -2 indicating auto mode.
+
+What:		/sys/devices/.../idle_timeout
+Date:		2026-05-23
+KernelVersion:	TBD
+Contact:	linux-input@vger.kernel.org
+Description:
+	Control display off behavior in seconds.
+	Accepted values:
+	  >0: switch display off after timeout when there is no keyboard,
+	      touchpad or touch bar input
+	   0: display off (input does not turn it back on)
+	  -1: display always on (no automatic off)
+	  -2: disable touch bar completely (mode off + display off)
+	Reads back the current value as an integer and newline.
+
+Users:
+	Desktop environments and local system policy services that tune touch bar
+	power/visibility behavior.

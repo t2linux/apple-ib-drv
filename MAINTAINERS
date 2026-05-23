@@ -1,0 +1,11 @@
+APPLE IBRIDGE AND TOUCH BAR DRIVER
+M:	Ronald Tschalär <ronald@innovation.ch>
+M:	Aditya Garg <85610623+AdityaGarg8@users.noreply.github.com>
+C:	Eduardo <eduardocp25@gmail.com>
+L:	linux-input@vger.kernel.org
+L:	linux-kernel@vger.kernel.org
+S:	Maintained
+F:	drivers/hid/apple-ibridge.c
+F:	drivers/hid/apple-touchbar.c
+F:	Documentation/ABI/testing/sysfs-driver-hid-apple-touchbar
+F:	Documentation/hid/apple-touchbar.rst

@@ -1,0 +1,31 @@
+Subject: [PATCH 0/3] HID: apple-ibridge/touchbar: upstream driver set for Touch Bar Macs
+
+Hi,
+
+This series introduces Apple iBridge and Touch Bar HID support for MacBook Pro
+systems where Touch Bar functionality is exposed via iBridge HID collections.
+
+Series layout:
+	1. HID: apple-ibridge: add iBridge collection split driver
+	2. HID: apple-touchbar: add mode/brightness/idle/fn handling
+	3. HID: apple-touchbar: document sysfs ABI and add maintainer entry
+
+Key points:
+	- Enables stable mode switching and power-aware display behavior.
+	- Provides configurable runtime policy through documented sysfs attributes.
+	- Includes T1 suspend/resume state restoration path.
+
+Testing summary:
+	- Build-tested with W=1 on Arch Linux kernel 7.x.
+	- Runtime-tested on Touch Bar hardware for mode and timeout behavior.
+	- checkpatch --strict: no errors/warnings in driver sources.
+
+Notes:
+	- This series is maintained on the official project branch `mbp15` and is
+		prepared to be applied under drivers/hid and Documentation in the kernel tree.
+	- The series is being sent by the current contributor; original maintainers
+		and project maintainers are listed in MAINTAINERS.
+
+Thanks for review.
+
+Signed-off-by: Eduardo <eduardocp25@gmail.com>

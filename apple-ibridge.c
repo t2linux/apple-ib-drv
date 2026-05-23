@@ -48,15 +48,7 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/usb.h>
-#include <linux/version.h>
 
-#include "hid-ids.h"
-#ifdef UPSTREAM
-#include "../hid/usbhid/usbhid.h"
-#else
-#define	hid_to_usb_dev(hid_dev) \
-	to_usb_device((hid_dev)->dev.parent->parent)
-#endif
 #include "apple-ibridge.h"
 
 #define APPLEIB_BASIC_CONFIG	1
@@ -66,7 +58,13 @@ static struct hid_device_id appleib_sub_hid_ids[] = {
 			 USB_DEVICE_ID_IBRIDGE_TB) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_LINUX_FOUNDATION,
 			 USB_DEVICE_ID_IBRIDGE_ALS) },
+	{ }
 };
+
+static struct usb_device *appleib_hid_to_usb_dev(struct hid_device *hdev)
+{
+	return to_usb_device(hdev->dev.parent->parent);
+}
 
 static struct {
 	unsigned int usage;
@@ -107,13 +105,8 @@ static int appleib_hid_raw_event(struct hid_device *hdev,
 	return 0;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
-static __u8 *appleib_report_fixup(struct hid_device *hdev, __u8 *rdesc,
-				  unsigned int *rsize)
-#else
 static const __u8 *appleib_report_fixup(struct hid_device *hdev, __u8 *rdesc,
-				  unsigned int *rsize)
-#endif
+					unsigned int *rsize)
 {
 	/* Some fields have a size of 64 bits, which according to HID 1.11
 	 * Section 8.4 is not valid ("An item field cannot span more than 4
@@ -442,7 +435,7 @@ static int appleib_hid_probe(struct hid_device *hdev,
 	int rc;
 
 	/* check and set usb config first */
-	udev = hid_to_usb_dev(hdev);
+	udev = appleib_hid_to_usb_dev(hdev);
 
 	if (udev->actconfig->desc.bConfigurationValue != APPLEIB_BASIC_CONFIG) {
 		rc = usb_driver_set_configuration(udev, APPLEIB_BASIC_CONFIG);
@@ -559,19 +552,10 @@ static int appleib_probe(struct platform_device *pdev)
 	return 0;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6,11,0)
-static int appleib_remove(struct platform_device *pdev)
-{
-	hid_unregister_driver(&appleib_hid_driver);
-
-	return 0;
-}
-#else
 static void appleib_remove(struct platform_device *pdev)
 {
 	hid_unregister_driver(&appleib_hid_driver);
 }
-#endif
 
 static int appleib_suspend(struct platform_device *pdev, pm_message_t message)
 {
