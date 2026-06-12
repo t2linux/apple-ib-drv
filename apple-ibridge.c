@@ -99,9 +99,11 @@ static int appleib_hid_raw_event(struct hid_device *hdev,
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(hdev_info->sub_hdevs); i++) {
-		if (READ_ONCE(hdev_info->sub_open[i]))
-			hid_input_report(hdev_info->sub_hdevs[i], report->type,
-					 data, size, 0);
+		struct hid_device *sub_hdev = READ_ONCE(hdev_info->sub_hdevs[i]);
+
+		if (sub_hdev && !IS_ERR(sub_hdev) &&
+		    READ_ONCE(hdev_info->sub_open[i]))
+			hid_input_report(sub_hdev, report->type, data, size, 0);
 	}
 
 	return 0;
@@ -401,20 +403,50 @@ static struct appleib_hid_dev_info *appleib_add_device(struct hid_device *hdev)
 	hdev_info->hdev = hdev;
 
 	for (i = 0; i < hdev->maxcollection; i++) {
+		int idx;
+
 		usage = hdev->collection[i].usage;
 		dev_id = appleib_find_dev_id_for_usage(usage);
 
 		if (!dev_id) {
-			hid_warn(hdev, "Unknown collection encountered with usage %x\n",
-				 usage);
-		} else {
-			hdev_info->sub_hdevs[i] = appleib_add_sub_dev(hdev_info, dev_id);
+			/*
+			 * Only application (top-level) collections map to a
+			 * sub-device; nested collections (e.g. the ALS's sensor
+			 * sub-collections) are expected -- don't warn about them.
+			 */
+			if (hdev->collection[i].type == HID_COLLECTION_APPLICATION)
+				hid_warn(hdev, "Unknown collection encountered with usage %x\n",
+					 usage);
+			continue;
+		}
 
-			if (IS_ERR(hdev_info->sub_hdevs[i])) {
-				while (i-- > 0)
-					hid_destroy_device(hdev_info->sub_hdevs[i]);
-				return (void *)hdev_info->sub_hdevs[i];
-			}
+		/*
+		 * Index sub_hdevs[] by the slot of the MATCHED id in
+		 * appleib_sub_hid_ids[] (in-bounds by construction), NOT by the
+		 * raw collection index i. sub_hdevs[] has only
+		 * ARRAY_SIZE(appleib_sub_hid_ids) entries, while
+		 * hdev->maxcollection counts every collection in the report
+		 * descriptor -- the T1's combined display/ALS interface has 7
+		 * (ALS, five nested sensor collections, and the Touch Bar display
+		 * at index 6), so indexing by i wrote sub_hdevs[6], past the end
+		 * of the allocation, corrupting the adjacent object and GPF'ing
+		 * on any later teardown.
+		 */
+		idx = dev_id - appleib_sub_hid_ids;
+
+		if (hdev_info->sub_hdevs[idx])
+			continue;
+
+		hdev_info->sub_hdevs[idx] = appleib_add_sub_dev(hdev_info, dev_id);
+
+		if (IS_ERR(hdev_info->sub_hdevs[idx])) {
+			void *err = hdev_info->sub_hdevs[idx];
+
+			hdev_info->sub_hdevs[idx] = NULL;
+			for (idx = 0; idx < ARRAY_SIZE(hdev_info->sub_hdevs); idx++)
+				if (hdev_info->sub_hdevs[idx])
+					hid_destroy_device(hdev_info->sub_hdevs[idx]);
+			return err;
 		}
 	}
 
